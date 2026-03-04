@@ -15,8 +15,8 @@ A Python-based stock ticker tracking application that fetches data from Yahoo Fi
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/stock-ticker-tracker.git
-   cd stock-ticker-tracker
+   git clone https://github.com/mpeaton37/pull-my-ticker.git
+   cd pull-my-ticker 
    ```
 
 2. Install dependencies (use python3 if pip is not directly available):

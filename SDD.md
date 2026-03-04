@@ -147,4 +147,3 @@ DB.
 - Mobile responsiveness.
 
 This SDD is iterative and will be updated as development progresses.
->>>>>>> REPLACE
