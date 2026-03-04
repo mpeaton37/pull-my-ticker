@@ -24,6 +24,11 @@ A Python-based stock ticker tracking application that fetches data from Yahoo Fi
    python3 -m pip install -r requirements.txt
    ```
 
+3. Install the package in editable mode (required for running tests and importing modules):
+   ```bash
+   pip install -e .
+   ```
+
 ## Usage
 
 ### Basic Analysis
