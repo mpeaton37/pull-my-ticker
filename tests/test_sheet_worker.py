@@ -7,7 +7,7 @@ from src.sheet_worker import SheetWorker
 def sample_worker(tmp_path):
     filename = tmp_path / "test.xlsx"
     # Create a simple Excel file
-    df = pd.DataFrame({'A': ['Symbol', 'AAPL', 'GOOGL']})
+    df = pd.DataFrame({'Symbol': ['AAPL', 'GOOGL']})
     df.to_excel(filename, index=False)
     return SheetWorker(str(filename))
 

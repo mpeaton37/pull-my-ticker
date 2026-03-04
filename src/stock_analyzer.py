@@ -51,6 +51,11 @@ class StockAnalyzer:
         self.blacklist: List[str] = ['ZTS']
         self.targets: Dict[str, Dict[str, Optional[float]]] = {}  # Analyst price targets
 
+        # Initialize empty data structures for each symbol
+        for symbol in self.symbols:
+            self.data[symbol] = pd.DataFrame()
+            self.fundamental_data[symbol] = {}
+
     @staticmethod
     def _sanitize_table_name(symbol: str) -> str:
         """Convert symbol to valid SQLite table name"""

@@ -1,10 +1,8 @@
 import openpyxl
 import sqlite3
 import pandas as pd
-from typing import List, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from stock_analyzer import StockAnalyzer
+from typing import List
+from src.stock_analyzer import StockAnalyzer
 
 class SheetWorker:
     """
@@ -29,7 +27,7 @@ class SheetWorker:
         """Return the list of symbols."""
         return self.symbols
 
-    def update_excel_from_db(self, analyst: 'StockAnalyzer') -> None:
+    def update_excel_from_db(self, analyst: StockAnalyzer) -> None:
         """Update the Excel file with data from the StockAnalyzer."""
         # Get summary data from analyst
         summary_df = analyst.read_from_sqlite('stocks.db')
