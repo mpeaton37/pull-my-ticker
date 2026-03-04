@@ -19,11 +19,21 @@ A Python-based stock ticker tracking application that fetches data from Yahoo Fi
    cd stock-ticker-tracker
    ```
 
-2. Install dependencies:
+2. Install dependencies (use python3 if pip is not directly available):
    ```bash
-   pip install -r requirements.txt
+   python3 -m pip install -r requirements.txt
    ```
 
 ## Usage
 
 ### Basic Analysis
+
+### Web App
+Run the Flask-based web app for interactive analysis:
+
+```bash
+python src/app.py
+```
+
+Access at http://localhost:5000. Example endpoints:
+- `/visualize/<symbol>`: View interactive plot for a stock symbol (data loaded from DB if available).
