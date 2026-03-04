@@ -1,0 +1,5 @@
+
+### Scheduled Updates
+Run `python src/pull_latest.py` to update data daily at 11:10 AM.
+
+### Visualization

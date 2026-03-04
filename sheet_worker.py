@@ -32,7 +32,7 @@ class SheetWorker:
     def update_excel_from_db(self, analyst: 'StockAnalyzer') -> None:
         """Update the Excel file with data from the StockAnalyzer."""
         # Get summary data from analyst
-        summary_df = analyst.read_from_sqlite('stock_analysis.db')
+        summary_df = analyst.read_from_sqlite('stocks.db')
         if summary_df is None:
             raise ValueError("No data available from database")
 

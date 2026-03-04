@@ -21,7 +21,7 @@ def job() -> None:
     end_date = datetime.datetime.now()
     analyst = sa.StockAnalyzer(symbols, start_date, end_date)
     analyst.fetch_market_data()
-    analyst.export_to_sqlite('stock_analysis.db')
+    analyst.export_to_sqlite('stocks.db')
     worker.update_excel_from_db(analyst)
     logger.info(f"Finished updating stock data and database at {datetime.datetime.now()}")
 
