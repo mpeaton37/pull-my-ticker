@@ -514,8 +514,8 @@ class StockAnalyzer:
 
             if symbol:
                 # Read historical data for specific symbol
-                table_name = f'historical_data_{symbol.lower().replace(".", "_')}'
-                query = f'SELECT * FROM {table_name}'
+                table_name = f"historical_data_{symbol.lower().replace('.', '_')}"
+                query = f"SELECT * FROM {table_name}"
                 df = pd.read_sql_query(query, conn)
 
                 # Convert string dates back to datetime
