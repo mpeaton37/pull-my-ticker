@@ -6,7 +6,7 @@ from typing import Tuple
 class Predictor(ABC):
     """
     Model-agnostic abstract base class for predictors/filters.
-    Allows swapping CommonFilter (C++) with more advanced models later.
+    Allows swapping KalmanFilter (C++) with more advanced models later.
     """
 
     @abstractmethod
@@ -19,9 +19,9 @@ class Predictor(ABC):
         pass
 
 
-class CommonFilter(Predictor):
+class KalmanFilter(Predictor):
     """
-    Initial implementation wrapping the user's C++ common filter model.
+    Initial implementation wrapping the user's C++ Kalman filter model.
     Uses ctypes to call into a compiled shared library (common_filter.so).
     Falls back to simple statistical mean/variance if C++ call fails.
     """

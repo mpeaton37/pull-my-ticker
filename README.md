@@ -11,7 +11,7 @@ A Python-based stock ticker tracking application that fetches data from Yahoo Fi
 - Interactive visualizations (Plotly + Bokeh)
 - Scheduled daily updates via `pull_latest.py`
 - Web interface via Flask (`src/app.py`)
-- Model-agnostic predictor (`src/predictor.py`) using DB data (initially wraps C++ common filter)
+- Model-agnostic predictor (`src/predictor.py`) using DB data (initially wraps C++ Kalman filter)
 
 ## Installation
 

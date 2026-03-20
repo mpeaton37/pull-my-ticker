@@ -16,7 +16,7 @@ Strawman based on current codebase: StockAnalyzer (core logic), SheetWorker (Exc
 - Viz (visualize with Plotly candlestick/RSI).
 - Web routes (/, /visualize/<symbol> PNG).
 - Scheduling (pull_latest.job).
-- New: Model-agnostic price/variance prediction using DB data and C++ common filter.
+- New: Model-agnostic price/variance prediction using DB data and C++ Kalman filter.
 
 **Non-Functional**:
 - SQLite initially; PostgreSQL later.
@@ -40,13 +40,13 @@ Backend-heavy web app with DB/Excel integration.
 ```
 User (Web/CLI) → app.py (Flask) / pull_latest.py → StockAnalyzer (fetch/add indicators/signals/export/predict) → SQLite ('stocks.db') / Excel ('mbook3.xlsx')
 ↑ Viz: Plotly PNG/HTML in /visualize/<symbol>
-↑ Predictor: model-agnostic wrapper around C++ common filter
+↑ Predictor: model-agnostic wrapper around C++ Kalman filter
 ```
 - **Frontend**: Basic Flask routes; expand to React.
 - **Backend**: StockAnalyzer core; SheetWorker for Excel.
 - **DB**: Per-symbol tables (historical_data_{symbol}), summary_data, fundamental_data, metadata.
 - **Scheduling**: schedule lib in pull_latest (daily 11:10).
-- **Predictor**: Abstract interface for filters/models; starts with CommonFilter calling C++.
+- **Predictor**: Abstract interface for filters/models; starts with KalmanFilter calling C++.
 
 ### 2.2 Data Flow
 1. Symbols from Excel (SheetWorker.read_symbols) or hardcoded.
@@ -54,7 +54,7 @@ User (Web/CLI) → app.py (Flask) / pull_latest.py → StockAnalyzer (fetch/add 
 3. Process: add_advanced_indicators, generate_signals.
 4. Store: export_to_sqlite (summary/historical/fundamental/views).
 5. Viz/Export: visualize (Plotly), export_to_excel, SheetWorker.update_excel_from_db (via read_from_sqlite).
-6. Predict: Load from DB → CommonFilter (C++) → price + variance.
+6. Predict: Load from DB → KalmanFilter (C++) → price + variance.
 
 ## 3. Data Design
 
@@ -112,7 +112,7 @@ src/sheet_worker.py:
 ### 4.5 Predictor
 New: src/predictor.py
 - Abstract `Predictor` for model-agnostic design.
-- `CommonFilter` implementation (initially wraps C++ common filter model via ctypes).
+- `KalmanFilter` implementation (initially wraps C++ Kalman filter model via ctypes).
 - Uses pandas DataFrame from DB (historical prices) to compute/predict price and variance.
 - Easily extensible to other models (e.g., ML, Kalman filter).
 
@@ -163,7 +163,7 @@ Plotly candlestick + overlays (RSI); BytesIO PNG serve. Bokeh stub.
 5. More indicators/ML (Prophet).
 6. Alerts (email on signals).
 7. Backtesting.
-8. Advanced predictors (replace CommonFilter with ML/Kalman while keeping agnostic interface).
+8. Advanced predictors (replace KalmanFilter with ML/Kalman while keeping agnostic interface).
 9. Expose prediction via web endpoint and add variance to visualizations.
 
 Iterative; update post-milestones.
