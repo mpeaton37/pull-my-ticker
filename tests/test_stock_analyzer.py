@@ -21,12 +21,12 @@ def test_fetch_market_data(mock_download, mock_ticker, sample_analyzer):
     # Mock validation (fast_info)
     mock_ticker.return_value.fast_info = {'lastPrice': 152.0}
     
-    # Mock bulk download
+    # Mock bulk download with correct MultiIndex on columns
     mock_hist = pd.DataFrame({
         'Open': [150], 'High': [155], 'Low': [148], 'Close': [152], 'Volume': [1000]
     }, index=pd.to_datetime(['2023-01-01']))
     mock_download.return_value = pd.concat(
-        [mock_hist], keys=['AAPL'], names=['Ticker', 'Date']
+        [mock_hist], axis=1, keys=['AAPL']
     )
     
     sample_analyzer.fetch_market_data()
