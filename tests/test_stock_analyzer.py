@@ -15,16 +15,15 @@ def test_init(sample_analyzer):
     assert 'AAPL' in sample_analyzer.data
     assert 'AAPL' in sample_analyzer.fundamental_data
 
-@patch('src.stock_analyzer.yf.Ticker')
-def test_fetch_market_data(mock_ticker, sample_analyzer):
-    mock_stock = MagicMock()
+@patch('src.stock_analyzer.yf.download')
+def test_fetch_market_data(mock_download, sample_analyzer):
     mock_hist = pd.DataFrame({
         'Open': [150], 'High': [155], 'Low': [148], 'Close': [152], 'Volume': [1000]
     }, index=pd.to_datetime(['2023-01-01']))
-    mock_stock.history.return_value = mock_hist
-    mock_stock.info = {'forwardPE': 20.0}
-    mock_ticker.return_value = mock_stock
-
+    mock_download.return_value = pd.concat(
+        [mock_hist], keys=['AAPL'], names=['Ticker', 'Date']
+    )
+    
     sample_analyzer.fetch_market_data()
     assert not sample_analyzer.data['AAPL'].empty
     assert 'RSI' in sample_analyzer.data['AAPL'].columns
