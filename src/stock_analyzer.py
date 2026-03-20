@@ -11,7 +11,7 @@ import plotly.graph_objects as go  # Interactive, finance-friendly
 import logging
 from bokeh.plotting import figure, show  # For fancy dashboards
 from datetime import datetime
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Tuple
 
 from .predictor import CommonFilter
 
@@ -514,7 +514,7 @@ class StockAnalyzer:
 
             if symbol:
                 # Read historical data for specific symbol
-                table_name = f'historical_data_{symbol.lower().replace(".", "_")}'
+                table_name = f'historical_data_{symbol.lower().replace(".", "_')}'
                 query = f'SELECT * FROM {table_name}'
                 df = pd.read_sql_query(query, conn)
 
