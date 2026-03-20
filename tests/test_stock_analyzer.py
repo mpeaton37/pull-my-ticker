@@ -15,8 +15,13 @@ def test_init(sample_analyzer):
     assert 'AAPL' in sample_analyzer.data
     assert 'AAPL' in sample_analyzer.fundamental_data
 
+@patch('src.stock_analyzer.yf.Ticker')
 @patch('src.stock_analyzer.yf.download')
-def test_fetch_market_data(mock_download, sample_analyzer):
+def test_fetch_market_data(mock_download, mock_ticker, sample_analyzer):
+    # Mock validation (fast_info)
+    mock_ticker.return_value.fast_info = {'lastPrice': 152.0}
+    
+    # Mock bulk download
     mock_hist = pd.DataFrame({
         'Open': [150], 'High': [155], 'Low': [148], 'Close': [152], 'Volume': [1000]
     }, index=pd.to_datetime(['2023-01-01']))
