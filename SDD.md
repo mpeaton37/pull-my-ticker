@@ -17,6 +17,7 @@ Strawman based on current codebase: StockAnalyzer (core logic), SheetWorker (Exc
 - Web routes (/, /visualize/<symbol> PNG).
 - Scheduling (pull_latest.job).
 - New: Model-agnostic price/variance prediction using DB data and C++ Kalman filter.
+- Symbol validation precheck to skip delisted/invalid tickers from spreadsheet.
 
 **Non-Functional**:
 - SQLite initially; PostgreSQL later.
@@ -50,11 +51,12 @@ User (Web/CLI) → app.py (Flask) / pull_latest.py → StockAnalyzer (fetch/add 
 
 ### 2.2 Data Flow
 1. Symbols from Excel (SheetWorker.read_symbols) or hardcoded.
-2. Fetch (StockAnalyzer.fetch_market_data; cache via DB if !force_refresh).
-3. Process: add_advanced_indicators, generate_signals.
-4. Store: export_to_sqlite (summary/historical/fundamental/views).
-5. Viz/Export: visualize (Plotly), export_to_excel, SheetWorker.update_excel_from_db (via read_from_sqlite).
-6. Predict: Load from DB → KalmanFilter (C++) → price + variance.
+2. Validate symbols (skip delisted/invalid via yfinance fast_info).
+3. Fetch (StockAnalyzer.fetch_market_data; cache via DB if !force_refresh).
+4. Process: add_advanced_indicators, generate_signals.
+5. Store: export_to_sqlite (summary/historical/fundamental/views).
+6. Viz/Export: visualize (Plotly), export_to_excel, SheetWorker.update_excel_from_db (via read_from_sqlite).
+7. Predict: Load from DB → KalmanFilter (C++) → price + variance.
 
 ## 3. Data Design
 
@@ -78,12 +80,14 @@ SQLite for dev; PostgreSQL for prod (indexing, concurrency).
 - yf.Ticker.history/info/fast_info (historical/fundamental/latest).
 - Cache: DB check last_update >=24h.
 - Predictor uses historical data from DB for price/variance.
+- Pre-validation uses yf.Ticker.fast_info to filter bad symbols.
 
 ## 4. Component Design
 
 ### 4.1 StockAnalyzer
 src/stock_analyzer.py:
 - `__init__(symbols, start_date, end_date)`: data dict, fundamental_data, blacklist=['ZTS'].
+- `_validate_symbols()`: quick yfinance precheck to skip delisted/invalid symbols.
 - `fetch_market_data(force_refresh=True, latest_only=False)`: yfinance + indicators (RSI/MACD/BB).
 - `export_to_sqlite(db_path='stocks.db')`: Multi-table export + views/metadata.
 - `from_sqlite(db_path)`: Load all data/symbols.
@@ -154,6 +158,7 @@ Plotly candlestick + overlays (RSI); BytesIO PNG serve. Bokeh stub.
 - **DB**: SQLite single-writer → PostgreSQL.
 - **C++ Integration**: Assumes compiled shared lib; add pybind11 or ctypes error handling.
 - **Viz**: Plotly PNG size → HTML/JS embed.
+- **Invalid symbols**: Pre-validation helps but may still produce some NULLs for edge cases.
 
 ## 8. Future Enhancements (Prioritized)
 1. Dynamic symbols (DB/config vs hardcoded).

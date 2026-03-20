@@ -64,6 +64,25 @@ class StockAnalyzer:
         """Convert symbol to valid SQLite table name"""
         return f"historical_data_{symbol.lower().replace('-', '_').replace('.', '_')}"
 
+    def _validate_symbols(self) -> None:
+        """Quick precheck for symbol validity using yfinance fast_info to filter delisted/invalid tickers."""
+        valid = []
+        for symbol in self.symbols:
+            try:
+                ticker = yf.Ticker(symbol)
+                info = ticker.fast_info
+                if info.get('lastPrice') is not None or info.get('regularMarketPrice') is not None:
+                    valid.append(symbol)
+                else:
+                    self.blacklist.append(symbol)
+                    logger.warning(f"Invalid or delisted symbol skipped: {symbol}")
+            except Exception as e:
+                self.blacklist.append(symbol)
+                logger.warning(f"Invalid or delisted symbol skipped: {symbol} ({e})")
+        self.symbols = valid
+        if not self.symbols:
+            logger.warning("No valid symbols remaining after validation.")
+
     @classmethod
     def from_sqlite(cls, db_path: str) -> 'StockAnalyzer':
         """
@@ -319,6 +338,7 @@ class StockAnalyzer:
         """Fetch stock data from multiple sources and ensure timezone-unaware dates.
         Uses bulk yf.download for speed; falls back to threaded fetches if needed.
         """
+        self._validate_symbols()  # Precheck for valid symbols before any fetch
         conn = sqlite3.connect('stocks.db')
         try:
             if not self.symbols:
