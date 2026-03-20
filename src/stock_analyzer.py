@@ -543,11 +543,11 @@ class StockAnalyzer:
             self.fetch_market_data(force_refresh=True)  # Or latest_only as below
             return self.data if symbol is None else self.data.get(symbol)
 
-    def visualize(self, symbol: str, plot_type: str = 'candlestick', interactive: bool = True) -> None:
+    def visualize(self, symbol: str, plot_type: str = 'candlestick', interactive: bool = True):
         df = self.load_for_notebook(symbol)
         if df is None or df.empty:
             logger.warning(f"No data available for {symbol}")
-            return
+            return None
         if interactive:
             # Plotly Candlestick (fancy for finance)
             fig = go.Figure(data=[go.Candlestick(x=df.index,
@@ -556,15 +556,18 @@ class StockAnalyzer:
             fig.add_trace(go.Scatter(x=df.index, y=df['RSI'], name='RSI', yaxis='y2'))
             fig.update_layout(title=f'{symbol} Stock', yaxis_title='Price', yaxis2={'title': 'RSI', 'overlaying': 'y', 'side': 'right'})
             fig.show()
+            return fig
         else:
             # Matplotlib fallback
             import matplotlib.pyplot as plt
             df['Close'].plot(title=f'{symbol} Close')
             plt.show()
+            return None
         # Bokeh for streaming/dashboard (stub)
         p = figure(title=f'{symbol} Bokeh', x_axis_type='datetime')
         p.line(df.index, df['Close'], legend_label='Close')
         show(p)
+        return None
 
     def predict_price_and_variance(self, symbol: str) -> Tuple[float, float]:
         """

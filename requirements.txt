@@ -12,3 +12,4 @@ coverage==7.3.0
 pytest-cov==4.1.0
 flask==3.0.3
 apscheduler==3.10.4
+flake8==6.1.0

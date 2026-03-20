@@ -3,11 +3,12 @@ import yfinance as yf
 from openpyxl import load_workbook
 import pandas as pd
 import logging
-import stock_analyzer as sa
-from sheet_worker import SheetWorker
+from src.stock_analyzer import StockAnalyzer
+from src.sheet_worker import SheetWorker
 import schedule
 import time
 from typing import NoReturn
+from datetime import timedelta
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,9 +18,9 @@ def job() -> None:
     worker = SheetWorker('mbook3.xlsx')
     worker.read_symbols()
     symbols = worker.get_symbols()
-    start_date = datetime.datetime.now() - datetime.timedelta(days=365)
+    start_date = datetime.datetime.now() - timedelta(days=365)
     end_date = datetime.datetime.now()
-    analyst = sa.StockAnalyzer(symbols, start_date, end_date)
+    analyst = StockAnalyzer(symbols, start_date, end_date)
     analyst.fetch_market_data()
     analyst.export_to_sqlite('stocks.db')
     worker.update_excel_from_db(analyst)

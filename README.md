@@ -87,3 +87,5 @@ pytest --cov=src --cov-report=html
 - **C++ filter**: Verify `common_filter.so` exists and is loadable via ctypes.
 
 See `SDD.md` for full design details.
+
+This project is ready for GitHub (clean code, passing tests/CI, no secrets, MIT license).

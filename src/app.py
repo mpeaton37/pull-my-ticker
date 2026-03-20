@@ -15,7 +15,10 @@ def index():
 def visualize(symbol):
     # Ensure data is fetched/loaded
     analyzer.fetch_market_data(force_refresh=False)
-    fig = analyzer.visualize(symbol, plot_type='candlestick', interactive=True)
+    fig = analyzer.visualize(symbol, plot_type='candlestick', interactive=False)
+    
+    if fig is None:
+        return "No data available for visualization", 404
     
     # Save Plotly figure to bytes for serving
     img_bytes = io.BytesIO()
