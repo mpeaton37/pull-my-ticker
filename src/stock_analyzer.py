@@ -12,6 +12,7 @@ import logging
 from bokeh.plotting import figure, show  # For fancy dashboards
 from datetime import datetime
 from typing import List, Dict, Optional, Union, Tuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .predictor import KalmanFilter
 
@@ -314,93 +315,82 @@ class StockAnalyzer:
             if conn:
                 conn.close()
 
-    def fetch_market_data(self, force_refresh: bool = True, latest_only: bool = False) -> None:
-        """Fetch stock data from multiple sources and ensure timezone-unaware dates"""
-        # TODO implement chunking
+    def fetch_market_data(self, force_refresh: bool = True, latest_only: bool = False, threads: int = 4) -> None:
+        """Fetch stock data from multiple sources and ensure timezone-unaware dates.
+        Uses bulk yf.download for speed; falls back to threaded fetches if needed.
+        """
         conn = sqlite3.connect('stocks.db')
         try:
-            for symbol in self.symbols:
-                if symbol in self.blacklist:
-                    continue
+            if not self.symbols:
+                return
 
-                if latest_only:
-                    try:
-                        stock = yf.Ticker(symbol)
-                        latest_price = stock.fast_info['last_price']
-                        latest_date = datetime.now().date()
-                        hist = pd.DataFrame({'Close': [latest_price]}, index=pd.to_datetime([latest_date]))
-                        hist['RSI'] = None  # TODO compute RSI
-                    except Exception as e:
-                        logger.error(f"Error fetching latest data for {symbol}: {str(e)}")
-                else:
-                    # Yahoo Finance data
-                    table_name = self._sanitize_table_name(symbol)
+            valid_symbols = [s for s in self.symbols if s not in self.blacklist]
+            if not valid_symbols:
+                return
 
-                    if not force_refresh:
-                        try:
-                            last_update = pd.read_sql_query(f'SELECT MAX(Date) FROM "{table_name}"', conn).iloc[0, 0]
-                            use_cached = pd.to_datetime(last_update) >= datetime.now() - pd.Timedelta(hours=24)
-                        except Exception as e:
-                            logger.warning(f"Error checking last update for {symbol}: {str(e)}")
-                            use_cached = False
-                        if use_cached:
-                            self.data[symbol] = pd.read_sql_query(f'SELECT * FROM "{table_name}"', conn, parse_dates=['Date'])
-                            self.fundamental_data[symbol] = pd.read_sql_query('SELECT * FROM fundamental_data WHERE symbol = ?', conn, params=(symbol,)).iloc[0].to_dict()
-                            self.targets[symbol] = pd.read_sql_query('SELECT * FROM targets WHERE symbol = ?', conn, params=(symbol,)).iloc[0].to_dict()
-                            logger.info(f"Using cached data for {symbol} from SQLite")
-
+            if latest_only:
+                # For latest-only, still use bulk where possible
+                data = yf.download(valid_symbols, period="1d", group_by='ticker', threads=threads)
+                for symbol in valid_symbols:
+                    if symbol in data.columns.get_level_values(0):
+                        hist = data[symbol].copy()
+                        hist = hist[['Open', 'High', 'Low', 'Close', 'Volume']]
+                        hist['RSI'] = None
+                        self.data[symbol] = hist
                     else:
-                        logger.info(f"Fetching data for {symbol} from Yahoo Finance")
-                        try:
-                            stock = yf.Ticker(symbol)
-                            hist = stock.history(start=self.start_date, end=self.end_date)
-                            if hist.empty:
-                                hist = pd.DataFrame()  # Empty DataFrame if error occurs
-                                logger.warning(f"No historical date available for {symbol} between {self.start_date} and {self.end_date}")
-                                self.blacklist.append(symbol)
-                                logger.info(f"Adding {symbol} to blacklist")
-                                continue
+                        self.data[symbol] = pd.DataFrame()
+            else:
+                # Bulk download for historical data (much faster than per-ticker loop)
+                try:
+                    data = yf.download(
+                        valid_symbols,
+                        start=self.start_date,
+                        end=self.end_date,
+                        group_by='ticker',
+                        threads=threads,
+                        auto_adjust=True
+                    )
+                    for symbol in valid_symbols:
+                        if symbol in data.columns.get_level_values(0):
+                            hist = data[symbol].copy()
+                            hist = hist[['Open', 'High', 'Low', 'Close', 'Volume']]
+                            # Add indicators
+                            hist['RSI'] = ta.momentum.RSIIndicator(hist['Close']).rsi()
+                            hist['MACD'] = ta.trend.MACD(hist['Close']).macd()
+                            indicator_bb = ta.volatility.BollingerBands(hist['Close'])
+                            hist['BB_upper'] = indicator_bb.bollinger_hband()
+                            hist['BB_middle'] = indicator_bb.bollinger_mavg()
+                            hist['BB_lower'] = indicator_bb.bollinger_lband()
+                            self.data[symbol] = hist
+                        else:
+                            self.data[symbol] = pd.DataFrame()
+                except Exception as bulk_err:
+                    logger.warning(f"Bulk download failed ({bulk_err}). Falling back to threaded fetches.")
+                    self._fetch_with_threads(valid_symbols, threads)
 
-                        except Exception as e:
-                            logger.error(f"Error fetching data for {symbol}: {str(e)}")
-                            self.blacklist.append(symbol)
-                            logger.info(f"Adding {symbol} to blacklist")
-                            hist = pd.DataFrame()  # Empty DataFrame if error occurs
-                            logger.warning(f"No historical date available for {symbol} between {self.start_date} and {self.end_date}")
-                            continue
-
-                    # Create Bollinger Bands indicator
-                    indicator_bb = ta.volatility.BollingerBands(hist['Close'])
-
-                    # Add technical indicators
-                    hist['RSI'] = ta.momentum.RSIIndicator(hist['Close']).rsi()
-                    hist['MACD'] = ta.trend.MACD(hist['Close']).macd()
-                    hist['BB_upper'] = indicator_bb.bollinger_hband()
-                    hist['BB_middle'] = indicator_bb.bollinger_mavg()
-                    hist['BB_lower'] = indicator_bb.bollinger_lband()
-
-                    self.data[symbol] = hist
-                    try:
-                        stock_info = stock.info
-                        logger.debug(f"Fetched fundamental data for {symbol}")
-                        self.fundamental_data[symbol] = {
-                            'PE_Ratio': stock_info.get('forwardPE'),
-                            'Dividend_Yield': stock_info.get('dividendYield'),
-                            'Market_Cap': stock_info.get('marketCap')
-                        }
-                        self.targets[symbol] = {
-                            'mean': stock_info.get('targetMeanPrice'),
-                            'high': stock_info.get('targetHighPrice'),
-                            'low': stock_info.get('targetLowPrice')
-                        }
-                    except Exception as e:
-                        logger.error(f"Error fetching fundamental data for {symbol}: {str(e)}")
-                        self.fundamental_data[symbol] = {
-                            'PE_Ratio': None,
-                            'Dividend_Yield': None,
-                            'Market_Cap': None
-                        }
-                        self.targets[symbol] = {'mean': None, 'high': None, 'low': None}
+            # Fetch fundamental data (still per-symbol, but fast)
+            for symbol in valid_symbols:
+                try:
+                    stock = yf.Ticker(symbol)
+                    stock_info = stock.info
+                    self.fundamental_data[symbol] = {
+                        'PE_Ratio': stock_info.get('forwardPE'),
+                        'Dividend_Yield': stock_info.get('dividendYield'),
+                        'Market_Cap': stock_info.get('marketCap')
+                    }
+                    self.targets[symbol] = {
+                        'mean': stock_info.get('targetMeanPrice'),
+                        'high': stock_info.get('targetHighPrice'),
+                        'low': stock_info.get('targetLowPrice')
+                    }
+                except Exception as e:
+                    logger.error(f"Error fetching fundamental data for {symbol}: {str(e)}")
+                    self.fundamental_data[symbol] = {
+                        'PE_Ratio': None,
+                        'Dividend_Yield': None,
+                        'Market_Cap': None
+                    }
+                    self.targets[symbol] = {'mean': None, 'high': None, 'low': None}
 
         except sqlite3.Error as e:
             logger.error(f"SQLite error: {str(e)}")
@@ -408,9 +398,33 @@ class StockAnalyzer:
         except Exception as e:
             logger.error(f"Error fetching market data: {str(e)}")
             _display_exception(e)
-
         finally:
             conn.close()
+
+    def _fetch_with_threads(self, symbols: List[str], threads: int = 4) -> None:
+        """Threaded fallback for fetching individual tickers."""
+        def fetch_one(symbol):
+            try:
+                stock = yf.Ticker(symbol)
+                hist = stock.history(start=self.start_date, end=self.end_date)
+                if not hist.empty:
+                    hist['RSI'] = ta.momentum.RSIIndicator(hist['Close']).rsi()
+                    hist['MACD'] = ta.trend.MACD(hist['Close']).macd()
+                    indicator_bb = ta.volatility.BollingerBands(hist['Close'])
+                    hist['BB_upper'] = indicator_bb.bollinger_hband()
+                    hist['BB_middle'] = indicator_bb.bollinger_mavg()
+                    hist['BB_lower'] = indicator_bb.bollinger_lband()
+                    return symbol, hist
+                return symbol, pd.DataFrame()
+            except Exception as e:
+                logger.warning(f"Failed to fetch {symbol}: {e}")
+                return symbol, pd.DataFrame()
+
+        with ThreadPoolExecutor(max_workers=threads) as executor:
+            future_to_symbol = {executor.submit(fetch_one, s): s for s in symbols}
+            for future in as_completed(future_to_symbol):
+                symbol, hist = future.result()
+                self.data[symbol] = hist
 
     def add_advanced_indicators(self) -> None:
         for symbol, df in self.data.items():
