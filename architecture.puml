@@ -1,0 +1,63 @@
+@startuml HEDGE2 Architecture with Backtesting Extension
+!theme plain
+
+title HEDGE2 Current + Backtesting Architecture
+
+actor User
+
+package "Web/CLI Interface" {
+  [Flask App] as App
+  [pull_latest.py] as Scheduler
+}
+
+package "Core Logic" {
+  [StockAnalyzer] as Analyzer
+  [Backtester] #LightBlue as Backtester
+  [Predictor] as Predictor
+  [SheetWorker] as SheetWorker
+}
+
+cloud "External APIs" {
+  [yfinance] as YF
+}
+
+database "SQLite DB\n(stocks.db)" as DB {
+  note right: historical_data_*, \nsummary_data, \nbacktest_results*
+}
+
+file "Excel\n(mbook3.xlsx)" as Excel
+
+package "Libraries" {
+  [vectorbt] #LightBlue as VectorBT
+  [ta-lib] as TA
+  [plotly] as Plotly
+}
+
+User --> App
+User --> Scheduler
+App --> Analyzer : fetch/visualize/predict/backtest
+Scheduler --> Analyzer : daily update
+Analyzer --> YF : fetch data
+Analyzer --> DB : export/read
+Analyzer --> Excel : update via SheetWorker
+Analyzer --> Predictor : predict_price_variance
+Analyzer ..> Backtester : backtest(symbol)
+Backtester --> DB : load signals/data
+Backtester --> VectorBT : simulate trades
+Backtester --> Plotly : equity curve
+App --> Backtester : /backtest/<symbol>
+SheetWorker --> Excel
+
+note right of Backtester
+  New for rec #5:
+  - Long-only signal strategy
+  - Metrics: Sharpe>1.5, DD<20%
+  - vectorbt Portfolio.from_signals()
+end note
+
+note bottom
+  Changes: +Backtester, +DB tables/columns,
+  +web route, +vectorbt dep
+end note
+
+@enduml
