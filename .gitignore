@@ -23,3 +23,7 @@ coverage.xml
 *.db
 *.xlsx
 .aider*
+*.egg-info/
+notebooks/
+.ipynb_checkpoints/
+
