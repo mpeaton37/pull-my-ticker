@@ -89,3 +89,6 @@ pytest --cov=src --cov-report=html
 See `SDD.md` for full design details.
 
 This project is ready for GitHub (clean code, passing tests/CI, no secrets, MIT license).
+
+## Disclaimer
+This software is provided for **educational and personal analysis purposes only**. It does **not** constitute financial, investment, trading, or legal advice. Stock markets involve substantial risk of loss, including total capital loss. Past performance does not predict future results. Signals and predictions are based on historical data and simplified models; they may be inaccurate. Always perform your own research, consider fundamentals, and consult a licensed financial advisor before making decisions. The authors/contributors disclaim all liability for any use or outcomes.
