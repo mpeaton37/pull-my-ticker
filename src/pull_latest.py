@@ -67,10 +67,14 @@ def job() -> None:
     symbols = config["tickers"]["symbols"]
 
     if not symbols:
-        worker = SheetWorker(excel_file)
-        worker.read_symbols()
-        symbols = worker.get_symbols()
-        logger.info(f"Loaded {len(symbols)} symbols from {excel_file}")
+        if os.path.exists(excel_file):
+            worker = SheetWorker(excel_file)
+            worker.read_symbols()
+            symbols = worker.get_symbols()
+            logger.info(f"Loaded {len(symbols)} symbols from {excel_file}")
+        else:
+            logger.warning(f"Excel file '{excel_file}' not found and no symbols in config. Skipping.")
+            return
     else:
         logger.info(f"Using {len(symbols)} symbols from config")
 
@@ -79,8 +83,14 @@ def job() -> None:
     analyst = StockAnalyzer(symbols, start_date, end_date)
     analyst.fetch_market_data()
     analyst.export_to_sqlite(db_file)
-    worker = SheetWorker(excel_file)
-    worker.update_excel_from_db(analyst)
+
+    if os.path.exists(excel_file):
+        worker = SheetWorker(excel_file)
+        worker.update_excel_from_db(analyst)
+        logger.info(f"Updated Excel file '{excel_file}'")
+    else:
+        logger.warning(f"Excel file '{excel_file}' not found, skipping Excel update.")
+
     logger.info(f"Finished updating stock data and database at {datetime.datetime.now()}")
 
 def main() -> NoReturn:
