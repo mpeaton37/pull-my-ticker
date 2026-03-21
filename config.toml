@@ -1,7 +1,7 @@
 [tickers]
 # List of symbols to fetch. Empty [] to use symbols from Excel sheet.
-symbols = []
-days_history = 365
+symbols = [MSFT, AAPL]
+days_history = 5 
 
 [files]
 excel = "mbook3.xlsx"
@@ -9,4 +9,4 @@ db = "stocks.db"
 
 [predictor]
 # Parameters for prediction algorithm (e.g., KalmanFilter).
-lib_path = "./common_filter.so"
+lib_path = "./kalman_filter.so"
