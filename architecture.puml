@@ -12,7 +12,7 @@ package "Web/CLI Interface" {
 
 package "Core Logic" {
   [StockAnalyzer] as Analyzer
-  [Backtester] #LightBlue as Backtester
+  [Backtester]  as Backtester #LightBlue
   [Predictor] as Predictor
   [SheetWorker] as SheetWorker
 }
@@ -28,7 +28,7 @@ database "SQLite DB\n(stocks.db)" as DB {
 file "Excel\n(mbook3.xlsx)" as Excel
 
 package "Libraries" {
-  [vectorbt] #LightBlue as VectorBT
+  [vectorbt]  as VectorBT #LightBlue
   [ta-lib] as TA
   [plotly] as Plotly
 }
