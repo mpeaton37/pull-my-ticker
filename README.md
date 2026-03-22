@@ -39,7 +39,7 @@ A Python-based stock ticker tracking application that fetches data from Yahoo Fi
    pip install -e .
    ```
 
-4. (Optional) For C++ common filter support in the predictor, compile your `common_filter.so` and place it in the project root or update the `lib_path` in `src/predictor.py`.
+4. (Optional) For C++ common filter support in the predictor, compile your `kalman_filter.so` and place it in the project root or update the `lib_path` in `src/predictor.py`.
 
 ## Usage
 
@@ -84,7 +84,7 @@ pytest --cov=src --cov-report=html
 ## Troubleshooting
 - **ModuleNotFoundError**: Run `pip install -e '.[test]'` in your conda env.
 - **Excel/DB permission issues**: Close any open files and ensure write permissions.
-- **C++ filter**: Verify `common_filter.so` exists and is loadable via ctypes.
+- **C++ filter**: Verify `kalman_filter.so` exists and is loadable via ctypes.
 
 See `SDD.md` for full design details.
 

@@ -1,7 +1,7 @@
 [tickers]
 # List of symbols to fetch. Empty [] to use symbols from Excel sheet.
-symbols = ["MSFT", "AAPL"]
-days_history = 5
+symbols = ["MSFT", "AAPL", "TSLA", "XRP"]
+days_history = 100 
 
 [files]
 excel = "mbook3.xlsx"

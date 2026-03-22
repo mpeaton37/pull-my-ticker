@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import List, Dict, Optional, Union, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from .predictor import KalmanFilter
+from .predictor import KalmanPredictor
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -606,14 +606,14 @@ class StockAnalyzer:
     def predict_price_and_variance(self, symbol: str) -> Tuple[float, float]:
         """
         New method for stock price and variance prediction.
-        Loads data from DB and uses the model-agnostic KalmanFilter (C++ backend).
+        Loads data from DB and uses the model-agnostic KalmanPredictor (C++ backend).
         """
         df = self.read_from_sqlite('stocks.db', symbol)
         if df is None or df.empty:
             logger.warning(f"No data available for prediction on {symbol}")
             return 0.0, 0.0
 
-        predictor = KalmanFilter()
+        predictor = KalmanPredictor()
         predicted_price, variance = predictor.predict(df)
         logger.info(f"Prediction for {symbol}: Price={predicted_price:.2f}, Variance={variance:.2f}")
         return predicted_price, variance

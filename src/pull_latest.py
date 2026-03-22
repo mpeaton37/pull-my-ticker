@@ -30,7 +30,7 @@ def load_config(config_path: str = "config.toml") -> Dict[str, Any]:
             "db": "stocks.db"
         },
         "predictor": {
-            "lib_path": "./common_filter.so"
+            "lib_path": "./kalman_filter.so"
         }
     }
     config = defaults.copy()
